@@ -43,12 +43,15 @@ through-thickness solver with the same physics runs the search in seconds, and t
 example in the write-up recovers a measured 780 °C core from a predicted 820.5 °C with a factor
 of 2.12.
 
-A last module reads the thermal result as metallurgy. It carries the chemistry of the grade and
-the standard empirical relations for the transformation temperatures (Ac1, Ac3, Ar3, Bs, Ms)
-together with the cooling rate that would leave 90 percent martensite, and sets those thresholds
-against the rate each depth actually inherits. It is a screening calculation and says so: a
-threshold temperature makes a phase possible, while how much of it appears depends on the time
-spent in each temperature range, which is what a CCT diagram encodes.
+A last module reads the thermal result as metallurgy. It carries the chemistry of the grade, which
+sits in the inputs cell beside the process settings, and works the phase question two ways: the
+standard empirical relations for the transformation temperatures (Ac1, Ac3, Ar3, Bs, Ms) together
+with the cooling rate that would leave 90 percent martensite, and an equilibrium calculation with
+pycalphad against the open MatCalc steel database. Then it sets those thresholds against the rate
+each depth actually inherits, and draws a CCT-style map of phase against cooling time. It is a
+screening calculation and says so: a threshold temperature makes a phase possible, while how much
+of it appears depends on the time spent in each temperature range, which is what a CCT diagram
+encodes.
 
 ## Default run
 
@@ -85,8 +88,15 @@ pip install -r requirements.txt
 jupyter notebook ACC_Heat_Analysis.ipynb
 ```
 
-Change `t_h, W, L, n_cur, v, FRT, s_gap` in the inputs cell and re-run. The empirical
-pre-calculation, the field solution and the contours all follow automatically.
+Change the process inputs and the chemistry in the inputs cell and re-run. The empirical
+pre-calculation, the field solution, the contours, the cooling rates and the phase screening all
+follow automatically.
+
+The equilibrium annex in section 13 is the one part that needs something extra. It wants
+`pycalphad` (`pip install pycalphad`, which currently needs Python 3.13 or older because there is
+no `symengine` wheel for 3.14 yet) and fetches the MatCalc mc_fe v2.062 steel database on first
+use into `databases/`, published by TU Wien under the Open Database Licence. Without pycalphad
+the rest of the notebook runs and that cell reports that the annex was skipped.
 
 ## Scope
 

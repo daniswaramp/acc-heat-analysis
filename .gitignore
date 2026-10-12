@@ -7,11 +7,15 @@ _rewrite_backups/
 # environment and scratch
 .venv/
 venv/
+.venv-calphad/
 __pycache__/
 *.py[cod]
 .ipynb_checkpoints/
 .jupyter_ystore.db
 .jupyter/
+
+# thermodynamic database, fetched on first use by the equilibrium cell
+databases/
 
 # OS noise
 Thumbs.db

@@ -152,6 +152,13 @@ ends also lose heat by air convection and radiation. Conduction handles everythi
 | Header spacing (uniform gap between headers) | `s_gap` | 3000 mm |
 | Tuning factor (water HTC scale: >1 more severe, <1 less severe) | `tune_factor` | 1.0 |
 
+The chemistry of the grade sits in the same cell, because everything downstream that depends on
+the steel rather than on the line reads it from there. Weight percent:
+
+| C | Si | Mn | P | S | Al | N | Cr | Mo | Ni | Cu | V | Nb | Ti |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 0.09 | 0.25 | 1.45 | 0.015 | 0.005 | 0.035 | 0.006 | 0.03 | 0.005 | 0.02 | 0.02 | 0.005 | 0.035 | 0.015 |
+
 ## 4 · Fixed parameters
 
 | Parameter | Value | Unit |
@@ -372,7 +379,88 @@ pycalphad. pycalphad answers a different question again, since it gives the equi
 fractions against temperature, needs a steel database to do it (Thermo-Calc TCFE, or MatCalc's
 iron database), and carries no kinetics either.
 
-## 12 · The story, in short
+## 12 · Equilibrium phases from a thermodynamic database
+
+The empirical relations in section 10 are quick and carry every element, but they are
+regressions. The notebook therefore runs a second, independent route on the same chemistry:
+equilibrium between austenite, ferrite and the carbides, solved with pycalphad against the
+MatCalc mc_fe v2.062 steel database, which TU Wien publishes under the Open Database Licence.
+The database is fetched on first use rather than copied into this repository.
+
+For the default grade, mole fraction of all phases:
+
+| Temperature [°C] | Ferrite (BCC_A2) | Cementite | Austenite (FCC_A1) |
+|---|---|---|---|
+| 860 and above | 0.000 | 0.000 | 1.000 |
+| 840 | 0.000 | 0.000 | 1.000 |
+| 820 | 0.265 | 0.000 | 0.735 |
+| 800 | 0.474 | 0.000 | 0.526 |
+| 760 | 0.709 | 0.000 | 0.291 |
+| 720 | 0.822 | 0.000 | 0.178 |
+| 700 | 0.857 | 0.000 | 0.143 |
+| 680 and below | 0.984 | 0.015 | 0.001 |
+
+Which puts the boundaries at:
+
+| Boundary | Calculated | Empirical equivalent |
+|---|---|---|
+| Ae3, the austenite field begins | 839 °C | Ac3 861 °C, Ar3 816 °C |
+| A1, cementite dissolves | 684 °C | Ac1 728 °C |
+
+Two things are worth reading off that comparison. The equilibrium Ae3 of 839 °C sits between the
+empirical Ac3 and Ar3, which is where it belongs, since Ac3 is measured on heating and Ar3 on
+cooling with the plate's undercooling. The A1 is 44 °C below the empirical Ac1, and that gap is
+the more interesting one: the empirical relation is a plain-carbon regression that carries no
+niobium, while the database dissolves the niobium into the austenite and depresses the carbide
+stability. Neither number is wrong, and the difference is a fair measure of what a regression on
+chemistry alone is worth when a microalloying addition is doing work.
+
+The calculation leaves vanadium, sulphur and phosphorus out. The database's models for those
+three make the pycalphad solver fail when they are combined with this chemistry, all three sit
+below 0.05 wt percent in the default grade, and the empirical relations in section 10 do carry
+them. Change the chemistry to a grade where any of them is above trace and the notebook says so.
+
+## 13 · A cooling time for every phase
+
+The last piece is the one a mill actually asks for: for a given cooling time, which phases come
+out. The notebook draws a CCT-style map for the chemistry in section 3, with the cooling rate at
+700 °C on the lower axis and the equivalent time from 800 to 500 °C on the upper one, since that
+time is the way a transformation is usually specified.
+
+![CCT-style screening map](figures/cct_screening.png)
+
+The horizontal boundaries are flat because Bs and Ms depend on the chemistry and only weakly on
+the rate, while the ferrite start line moves with the rate and is drawn as a curve over the range
+its regression was fitted on.
+
+| Time 800 to 500 °C [s] | Rate [°C/s] | What the chemistry gives |
+|---|---|---|
+| 5 | 60.00 | at or above Vc90, so martensite is expected |
+| 10 | 30.00 | below Vc90, so no martensite; ferrite start line is outside its fitted range here |
+| 40 | 7.50 | below Vc90, so no martensite; ferrite start line is outside its fitted range here |
+| 150 | 2.00 | ferrite starts above Bs, so ferrite and pearlite |
+| 300 | 1.00 | ferrite starts above Bs, so ferrite and pearlite |
+| 600 | 0.50 | ferrite starts above Bs, so ferrite and pearlite |
+| 1200 | 0.25 | ferrite starts above Bs, so ferrite and pearlite |
+
+Across every rate the ferrite start line covers, it stays above Bs, so ferrite and pearlite is
+what this grade makes at any cooling a run-out table can deliver. Martensite would need 37 °C/s
+or more, roughly 68 times the rate the plate carries on the cooling bed, and bainite would need
+the steel to reach 672 °C before the ferrite reaction has taken the austenite, which the same
+line says it will not do.
+
+Change the carbon or the manganese in section 3 and all of this moves: Bs and Ms fall as the
+alloying rises, the ferrite start line drops, and the martensite boundary walks toward the rates
+a real line can reach. That is the run worth doing before quoting a cooling practice for a new
+grade.
+
+Two warnings about reading the map. It is a screening guide, not a measured diagram: the lines
+say which phases the steel is capable of forming, not how much of each one appears, because that
+depends on the time spent in each temperature range, which is what a measured CCT diagram
+encodes. And a rate only decides the microstructure while the steel is inside the transformation
+range.
+
+## 14 · The story, in short
 
 - The surface is quenched by every curtain passage, while the core barely notices a single one
   and follows only through conduction, so the differential peaks while the curtain train is
@@ -389,6 +477,13 @@ iron database), and carries no kinetics either.
   $Ar_3$ at 816 °C, $B_s$ at 672 °C and $M_s$ at 470 °C, and 90 % martensite would need 37 °C/s.
   Since the section leaves the curtains between 808 and 821 °C and then cools at under 0.6 °C/s,
   the plate makes ferrite and pearlite, and bainite never gets a look in.
+- The same heat run through the thermodynamic database puts the equilibrium Ae3 at 839 °C and A1
+  at 684 °C, against the empirical Ac3 of 861 °C, Ar3 of 816 °C and Ac1 of 728 °C. Two independent
+  routes landing within a few tens of degrees is the useful check, and it is the A1 gap that says
+  what the niobium is doing.
+- Ask the map for a cooling time instead of a depth and the answer is the same at every rate a
+  run-out table can deliver: ferrite and pearlite. Martensite would need 37 °C/s, some 68 times
+  the rate this plate carries on the bed.
 - Change `t_h, W, L, n_cur, v, FRT, s_gap` in the notebook's inputs cell and re-run. The whole
   pipeline, from the empirical pre-calculation through the FDM to the contours, updates by
   itself.

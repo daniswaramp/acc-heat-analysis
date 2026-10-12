@@ -1,5 +1,10 @@
-# Only the analysis stack is needed. Colab and any standard Jupyter image already
-# carry both, so nothing has to be installed to run the notebook there.
+# The thermal model needs only these two, and Colab or any standard Jupyter image already
+# carries both, so nothing has to be installed to run the notebook there.
 numpy>=1.26
 matplotlib>=3.8
 jupyter
+
+# Optional, for the equilibrium phase calculation in section 13 only. Everything else runs
+# without it and the notebook simply reports that the annex is skipped.
+# pycalphad needs Python 3.13 or older: there is no symengine wheel for 3.14 yet.
+# pycalphad
