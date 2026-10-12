@@ -260,7 +260,8 @@ line is known for.
 ![Core-surface differential evolution](figures/dt_surface_core.png)
 
 With the default inputs the differential peaks at about 138 °C while the curtain train is
-still passing, then decays during air cooling.
+still passing, then decays during air cooling. The rates themselves, in °C/s at each depth, are
+tabulated in section 11, where they are set against the transformation temperatures.
 
 ## 9 · Validation and summary (default run)
 
@@ -281,7 +282,97 @@ the whole timeline, while the FDM applies it only during curtain contact, so the
 values bracket the FDM result. Lumped sits below it, since continuous quenching over-predicts
 the cooling, and the semi-infinite solution matches the early surface behaviour.
 
-## 10 · The story, in short
+## 10 · Chemistry: what the grade can form
+
+The thermal model gives the cooling rate at each depth. What that rate produces is a question
+about the steel, so the write-up carries the chemistry of the grade and the standard empirical
+relations for the temperatures at which the transformation starts. The composition used here, in
+weight percent:
+
+| C | Si | Mn | P | S | Al | N | Cr | Mo | Ni | Cu | V | Nb | Ti |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 0.09 | 0.25 | 1.45 | 0.015 | 0.005 | 0.035 | 0.006 | 0.03 | 0.005 | 0.02 | 0.02 | 0.005 | 0.035 | 0.015 |
+
+The relations, and where they come from.
+
+- $Ac_1 = 739 - 22C - 7Mn + 2Si + 14Cr + 13Mo - 13Ni + 20V$ (Brandis, 1975)
+- $Ac_3 = 910 - 203\sqrt{C} - 15.2Ni + 44.7Si + 104V + 31.5Mo + 13.1W$ (Andrews, 1965)
+- $Ar_3 = 910 - 203\sqrt{C} - 30Mn + 44.7Si - 11Cr + 31.5Mo - 15.2Ni$ (Andrews, 1965)
+- $B_s = 830 - 270C - 90Mn - 37Ni - 70Cr - 83Mo$ (Steven and Haynes, 1956)
+- $M_s = 561 - 474C - 33Mn - 17Cr - 17Ni - 21Mo$ (Steven and Haynes, 1956)
+- $\log_{10} V_{c90} = 2.94 - 0.75\beta$, with $\beta = 2.7C + 0.4Si + Mn + 0.45Ni + 0.8Cr + 2Mo$ (Ueno and Itoh, 1988)
+
+Which gives, for this grade:
+
+| Quantity | Value |
+|---|---|
+| Carbon equivalent β | 1.84 |
+| Ac1 | 728 °C |
+| Ac3 | 861 °C |
+| Ar3 | 816 °C |
+| Bs | 672 °C |
+| Ms | 470 °C |
+| Vc90, rate for 90 % martensite | 37 °C/s |
+
+$V_{c90}$ is quoted in the boron-treated form of the equation, which is the form the handbook
+reproduces. A boron-free plate needs a higher rate, so read the number as a floor.
+
+A regression that carries the cooling rate as a term also exists (Mintz, 2011: $Ar_3 = 862 -
+182C - 76.1Mn + 1121S - 1804Nb + 1168Ti - 2852N_t - 0.0084\,CR$, with $CR$ in °C/min). It was
+fitted between 10 and 200 °C/min and the peak rates in this run go far past that, so the notebook
+prints it only where the rate falls inside the fitted range and says so where it does not.
+
+## 11 · Reading the cooling curve against the transformation temperatures
+
+Every depth has its own thermal path, so every depth meets the transformation temperatures at a
+different moment and at a different rate. The rates, in °C/s:
+
+| Depth | Peak | Mean over the ACC pass | While air cooling | Through 800 to 500 °C |
+|---|---|---|---|---|
+| Surface | 692 | 3.0 | 0.45 | not reached |
+| Quarter depth | 11.7 | 2.6 | 0.54 | not reached |
+| One-third depth | 6.0 | 2.5 | 0.58 | not reached |
+| Core | 4.3 | 2.4 | 0.63 | not reached |
+
+The peak is the steepest instant, under a curtain as it passes, and it is the most grid-sensitive
+number in the whole model, since it follows from the water coefficient and the 1 mm first cell
+rather than from a measured surface response. The mean over the pass is what the bulk of the plate
+experiences. The rate while air cooling is the one that governs the transformation, because that
+is the rate the plate carries by the time it reaches the transformation range. No depth reaches
+500 °C inside the 54 s that are simulated, so the 800 to 500 °C window, the range that matters for
+the phases, sits outside this run.
+
+Set against the chemistry:
+
+| Depth | Rate while air cooling [°C/s] | T at end of ACC [°C] | T at end of window [°C] | What the path implies |
+|---|---|---|---|---|
+| Surface | 0.45 | 808 | 795 | ferrite and pearlite; 0.45 °C/s against Vc90 = 37 °C/s rules out martensite |
+| Quarter depth | 0.54 | 816 | 800 | ferrite and pearlite |
+| One-third depth | 0.58 | 819 | 801 | ferrite and pearlite |
+| Core | 0.63 | 821 | 802 | ferrite and pearlite |
+
+None of that is a transformation, and the numbers say why. The section leaves the curtains between
+808 and 821 °C, so the surface is already under the equilibrium Ar3 of 816 °C while the core is
+just above it, and the 30 s of air cooling brings every depth under Ar3. Bs at 672 °C and Ms at
+470 °C stay far below, and from there the plate sheds heat at under 0.6 °C/s against the 37 °C/s
+that 90 % martensite would need, while bainite would ask for the section to reach 672 °C at a rate
+it never sees. Ferrite and pearlite is what this plate can make.
+
+The 692 °C/s surface spike is real in the model and irrelevant to the phases, because it happens
+while the surface is still near 880 °C, well above the ferrite start temperature, and a cooling
+rate only decides the microstructure while the steel is inside the transformation range. This is
+also where the through-thickness spread goes quiet: the depths differ by about 13 °C at the end of
+the ACC, against 138 °C at the peak of the pass.
+
+What the comparison cannot do is kinetics. A threshold temperature says that a phase is possible,
+not how much of it appears, because the amount depends on how long the steel sits in each
+temperature range, and that is what a CCT diagram encodes. Going further honestly means a measured
+CCT diagram for the grade, a calibrated transformation model, or a thermodynamic calculation in
+pycalphad. pycalphad answers a different question again, since it gives the equilibrium phase
+fractions against temperature, needs a steel database to do it (Thermo-Calc TCFE, or MatCalc's
+iron database), and carries no kinetics either.
+
+## 12 · The story, in short
 
 - The surface is quenched by every curtain passage, while the core barely notices a single one
   and follows only through conduction, so the differential peaks while the curtain train is
@@ -290,6 +381,14 @@ the cooling, and the semi-infinite solution matches the early surface behaviour.
   and one-third-depth temperatures that sit between the two extremes.
 - Width and length gradients come from the side edges and from the leading and trailing edges
   losing heat to air, which shows up as cold rims in every contour.
+- The cooling rate in °C/s: the surface sees a peak of about 692 °C/s as each curtain passes, the
+  section as a whole cools at 2.4 to 3.0 °C/s over the ACC pass, and the rate that governs the
+  transformation is the 0.45 to 0.63 °C/s of air cooling on the bed. The surface peak is the most
+  grid-sensitive number in the model.
+- The chemistry of the grade (C 0.09, Mn 1.45, Nb 0.035) puts $Ac_1$ at 728 °C, $Ac_3$ at 861 °C,
+  $Ar_3$ at 816 °C, $B_s$ at 672 °C and $M_s$ at 470 °C, and 90 % martensite would need 37 °C/s.
+  Since the section leaves the curtains between 808 and 821 °C and then cools at under 0.6 °C/s,
+  the plate makes ferrite and pearlite, and bainite never gets a look in.
 - Change `t_h, W, L, n_cur, v, FRT, s_gap` in the notebook's inputs cell and re-run. The whole
   pipeline, from the empirical pre-calculation through the FDM to the contours, updates by
   itself.

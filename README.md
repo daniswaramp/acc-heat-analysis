@@ -43,13 +43,26 @@ through-thickness solver with the same physics runs the search in seconds, and t
 example in the write-up recovers a measured 780 °C core from a predicted 820.5 °C with a factor
 of 2.12.
 
+A last module reads the thermal result as metallurgy. It carries the chemistry of the grade and
+the standard empirical relations for the transformation temperatures (Ac1, Ac3, Ar3, Bs, Ms)
+together with the cooling rate that would leave 90 percent martensite, and sets those thresholds
+against the rate each depth actually inherits. It is a screening calculation and says so: a
+threshold temperature makes a phase possible, while how much of it appears depends on the time
+spent in each temperature range, which is what a CCT diagram encodes.
+
 ## Default run
 
 Inputs: 25 mm thick, 2000 mm wide, 12000 mm long, five curtains per side spaced 3000 mm apart,
 60 m/min table speed, 880 °C finish rolling temperature.
 
 - Core falls from 880 °C to 821 °C over 24.25 s of cooling, then the plate air-cools for 30 s.
-- The surface-to-core differential peaks at about 138 °C while the curtain train is still passing.
+- The surface-to-core differential peaks at about 138 °C while the curtain train is still passing,
+  and the depths differ by only about 13 °C once the plate reaches the cooling bed.
+- The cooling rate in °C/s: about 692 at the surface as a curtain passes, 2.4 to 3.0 averaged over
+  the ACC pass, and 0.45 to 0.63 while the plate air cools. Against a chemistry of 0.09 C, 1.45 Mn
+  and 0.035 Nb, the section leaves the curtains between 808 and 821 °C and transforms on the bed at
+  under 0.6 °C/s, which is ferrite and pearlite. Bainite would need the plate to reach 672 °C at a
+  rate it never sees, and 90 percent martensite would need 37 °C/s or more.
 - The analytical estimates bracket the field solution rather than matching it, because both
   assume the water coefficient acts continuously while the real schedule is pulsed. Lumped
   capacitance gives 251 °C at the end of cooling, which is a lower bound, and Heisler gives
