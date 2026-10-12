@@ -1,0 +1,19 @@
+# local working copies kept for safety, never published
+_rewrite_backups/
+
+# tool state
+.commandcode/
+
+# environment and scratch
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.jupyter_ystore.db
+.jupyter/
+
+# OS noise
+Thumbs.db
+desktop.ini
+.DS_Store

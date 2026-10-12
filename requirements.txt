@@ -1,0 +1,5 @@
+# Only the analysis stack is needed. Colab and any standard Jupyter image already
+# carry both, so nothing has to be installed to run the notebook there.
+numpy>=1.26
+matplotlib>=3.8
+jupyter
