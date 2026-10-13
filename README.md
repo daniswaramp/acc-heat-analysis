@@ -12,10 +12,28 @@ residual stress, flatness and property gradients through the thickness.
 ## What is here
 
 ```
-ACC_Heat_Analysis.ipynb    the model, one cell per step, runs in a few minutes
-ACC_Heat_Analysis.md       the same work as a write-up, with the equations and result tables
-figures/                   output of the default run
+ACC_Heat_Analysis.ipynb       the model, one cell per step, runs in a few minutes
+ACC_Heat_Analysis.md          the same work as a write-up, with the equations and result tables
+scripts/make_schematics.py    draws the two schematics below, no solver run needed
+figures/                      output of the default run, plus those schematics
 ```
+
+## The line, schematically
+
+![The laminar cooling line, 8 top and 8 bottom headers](figures/schematic_acc_line.png)
+
+The plate leaves the finishing mill at the finish rolling temperature and passes a bank of headers
+above and below. Eight is the most this line carries per side; the default run in the notebook uses
+five, and changing `n_cur` in the inputs cell moves both the drawing and the solution. A point on
+the surface is under water for the short time the impingement length takes to pass, then loses heat
+to air and radiation until the next header arrives, which is what the lower panel sketches and what
+section 8 computes.
+
+![Cross-section through one header pair](figures/schematic_cross_section.png)
+
+Half the width is solved, by symmetry, and the four depths quoted throughout are taken at the plate
+centre: surface, quarter depth, one-third depth and core. The impingement band is the part of the
+surface that sees the water coefficient at a given instant.
 
 ## How it works
 
@@ -53,6 +71,69 @@ screening calculation and says so: a threshold temperature makes a phase possibl
 of it appears depends on the time spent in each temperature range, which is what a CCT diagram
 encodes.
 
+## Equations
+
+The solver integrates Fourier's law and the constant-property diffusion equation:
+
+$$\mathbf{q} = -k\nabla T, \qquad \frac{\partial T}{\partial t} = \alpha \nabla^2 T, \qquad \alpha = \frac{k}{\rho c_p}$$
+
+At the faces, the boundary condition switches with the curtain position. Under water, and between
+curtains where the surface loses heat to air and radiates:
+
+$$-k\frac{\partial T}{\partial n} = h_w\,(T_s - T_w), \qquad -k\frac{\partial T}{\partial n} = h_{air}(T_s - T_\infty) + \varepsilon\sigma\left(T_s^4 - T_{amb}^4\right)$$
+
+The symmetry plane carries no flux, $\partial T/\partial n = 0$, and the width and end faces lose
+heat to air.
+
+Water flux over the impingement area, and the power-law coefficient it feeds:
+
+$$\dot W = \frac{Q_{header}/60}{W\,l_{imp}}, \qquad h_w = C\,\dot W^{\,n}, \qquad C = 1.2\times10^{4},\; n = 0.45$$
+
+Biot number, then the lumped model that the Biot number justifies or rules out:
+
+$$Bi = \frac{h_w\,(t_h/2)}{k}, \qquad \tau = \frac{\rho c_p (t_h/2)}{h_w}, \qquad T(t) = T_w + \left(T_{FRT} - T_w\right)e^{-t/\tau}$$
+
+Surface response of a semi-infinite solid during one curtain pass, and the Heisler one-term
+solution, the two analytical benchmarks:
+
+$$T_s = T_{FRT} + \left(T_w - T_{FRT}\right)\left(1 - e^{b^2}\mathrm{erfc}\,b\right), \qquad b = \frac{h_w\sqrt{\alpha t}}{k}$$
+
+$$\zeta_1\tan\zeta_1 = Bi, \qquad C_1 = \frac{4\sin\zeta_1}{2\zeta_1 + \sin 2\zeta_1}, \qquad \frac{T-T_w}{T_0-T_w} = C_1 e^{-\zeta_1^2 Fo}, \qquad Fo = \frac{\alpha t}{(t_h/2)^2}$$
+
+The explicit time step takes the tighter of the conduction and surface stability limits:
+
+$$\Delta t = 0.8 \min\left(\frac{1}{2\alpha\left(\Delta x^{-2} + \Delta y^{-2} + \Delta z^{-2}\right)},\;
+\frac{1}{2\alpha/\Delta x^2 + 2h_{max}/(\rho c_p \Delta x)}\right)$$
+
+Radiation is carried as a linearised coefficient, which is what keeps the explicit update stable:
+
+$$h_{rad} = \varepsilon\sigma\left(T^2 + T_\infty^2\right)\left(T + T_\infty\right)$$
+
+Cooling rate, quoted at each depth in °C/s:
+
+$$CR = -\frac{dT}{dt}$$
+
+Transformation temperatures from the empirical relations, and the cooling rate that would leave
+90 percent martensite:
+
+$$Ac_1 = 739 - 22C - 7Mn + 2Si + 14Cr + 13Mo - 13Ni + 20V$$
+
+$$Ac_3 = 910 - 203\sqrt{C} - 15.2Ni + 44.7Si + 104V + 31.5Mo + 13.1W$$
+
+$$Ar_3 = 910 - 203\sqrt{C} - 30Mn + 44.7Si - 11Cr + 31.5Mo - 15.2Ni$$
+
+$$B_s = 830 - 270C - 90Mn - 37Ni - 70Cr - 83Mo, \qquad M_s = 561 - 474C - 33Mn - 17Cr - 17Ni - 21Mo$$
+
+$$\log_{10} V_{c90} = 2.94 - 0.75\beta, \qquad \beta = 2.7C + 0.4Si + Mn + 0.45Ni + 0.8Cr + 2Mo$$
+
+The equilibrium annex minimises the Gibbs energy for the entered composition over the stable phase
+set, and reads Ae3 and A1 off the resulting fractions:
+
+$$\min G(T, x) \quad \text{over} \quad \{\gamma, \alpha, Fe_3C, M_{23}C_6, M_7C_3, M_6C\}$$
+
+Every alloy content above is in weight percent. Sources for the transformation equations, and the
+ranges they were fitted over, are listed in `ACC_Heat_Analysis.md` alongside each one.
+
 ## Default run
 
 Inputs: 25 mm thick, 2000 mm wide, 12000 mm long, five curtains per side spaced 3000 mm apart,
@@ -78,7 +159,7 @@ The full write-up, with the equations, the input tables and every figure, is in
 
 ## Run it
 
-[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/daniswaramp/acc-heat-analysis/blob/main/ACC_Heat_Analysis.ipynb)
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/daniswaramp/accelerated_cooling_fdm/blob/main/ACC_Heat_Analysis.ipynb)
 
 The notebook needs only `numpy` and `matplotlib`, both of which Colab already has, so the badge
 above runs it without any setup. Locally:
