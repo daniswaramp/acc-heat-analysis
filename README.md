@@ -23,11 +23,15 @@ figures/                      output of the default run, plus those schematics
 ![The laminar cooling line, 8 top and 8 bottom headers](figures/schematic_acc_line.png)
 
 The plate leaves the finishing mill at the finish rolling temperature and passes a bank of headers
-above and below. Eight is the most this line carries per side; the default run in the notebook uses
-five, and changing `n_cur` in the inputs cell moves both the drawing and the solution. A point on
-the surface is under water for the short time the impingement length takes to pass, then loses heat
-to air and radiation until the next header arrives, which is what the lower panel sketches and what
-section 8 computes.
+above and below. The drawing uses a 1000 mm header spacing so that the full bank of eight headers
+fits in one picture, and eight is the most this line carries per side. The default run in the
+notebook is five headers spaced 3000 mm apart, so the drawing and the numbers differ on purpose:
+`scripts/make_schematics.py` holds the geometry of the picture, while `n_cur` and `s_gap` in the
+inputs cell drive the solution and the notebook's own schematic in section 7.
+
+A point on the surface is under water for the short time the impingement length takes to pass, then
+loses heat to air and radiation until the next header arrives, which is what the lower panel
+sketches and what section 11 computes.
 
 ![Cross-section through one header pair](figures/schematic_cross_section.png)
 
@@ -173,7 +177,7 @@ Change the process inputs and the chemistry in the inputs cell and re-run. The e
 pre-calculation, the field solution, the contours, the cooling rates and the phase screening all
 follow automatically.
 
-The equilibrium annex in section 13 is the one part that needs something extra. It wants
+The equilibrium annex in section 3 is the one part that needs something extra. It wants
 `pycalphad` (`pip install pycalphad`, which currently needs Python 3.13 or older because there is
 no `symengine` wheel for 3.14 yet) and fetches the MatCalc mc_fe v2.062 steel database on first
 use into `databases/`, published by TU Wien under the Open Database Licence. Without pycalphad

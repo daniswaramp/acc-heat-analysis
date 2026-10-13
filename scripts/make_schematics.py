@@ -14,11 +14,11 @@ from matplotlib.patches import Rectangle, Polygon, Circle
 FIGDIR = pathlib.Path("figures")
 FIGDIR.mkdir(exist_ok=True)
 
-# defaults of the model, kept in step with the notebook's inputs cell
+# geometry of the drawing, kept in step with the notebook's inputs cell
 N_HEADER = 8            # the schematic draws the maximum, up to 8 top and 8 bottom
-S_GAP = 3.0             # header spacing [m]
-FIRST_HDR = 2.0         # position of header 1 [m]
-PLATE_SHOWN = 7.0       # metres of plate drawn upstream of header 1
+S_GAP = 1.0             # header spacing drawn here [m]
+FIRST_HDR = 1.0         # position of header 1 [m]
+PLATE_SHOWN = 6.0       # metres of plate drawn upstream of header 1
 THICK_MM = 25.0
 WIDTH_MM = 2000.0
 IMP_MM = 250.0          # curtain impingement length [mm]
@@ -54,24 +54,24 @@ def line_schematic():
             ax.add_patch(Rectangle((hx - half, y0), 2 * half, 0.44, fc=WATER, ec="k", lw=0.9, zorder=5))
             ax.add_patch(Polygon([[hx - half, base], [hx + half, base], [hx + 0.58, tip], [hx - 0.58, tip]],
                                  closed=True, fc=WATER, alpha=0.32, ec="none", zorder=1))
-        ax.annotate(f"H{j + 1}", xy=(hx, 1.44), ha="center", fontsize=9.5, color=WATER, fontweight="bold")
-        ax.annotate(f"H{j + 1}", xy=(hx, -1.64), ha="center", fontsize=9.5, color=WATER, fontweight="bold")
+        ax.annotate(f"H{j + 1}", xy=(hx, 1.32), ha="center", fontsize=9.5, color=WATER, fontweight="bold")
+        ax.annotate(f"H{j + 1}", xy=(hx, -1.48), ha="center", fontsize=9.5, color=WATER, fontweight="bold")
 
-    ax.annotate(f"{N_HEADER} top headers is the most the line carries", xy=(hdr_x[0] - 0.3, 1.82),
+    ax.annotate(f"{N_HEADER} top headers is the most the line carries", xy=(hdr_x[0] - 0.3, 1.96),
                 ha="left", fontsize=10.5, color=WATER)
-    ax.plot([hdr_x[0] - 0.45, hdr_x[-1] + 0.45], [1.68, 1.68], color=WATER, lw=0.9, alpha=0.55)
-    ax.annotate(f"{N_HEADER} bottom headers, same spacing", xy=(hdr_x[0] - 0.3, -2.00),
+    ax.plot([hdr_x[0] - 0.45, hdr_x[-1] + 0.45], [1.82, 1.82], color=WATER, lw=0.9, alpha=0.55)
+    ax.annotate(f"{N_HEADER} bottom headers, same spacing", xy=(hdr_x[0] - 0.3, -1.96),
                 ha="left", fontsize=10.5, color=WATER)
-    ax.plot([hdr_x[0] - 0.45, hdr_x[-1] + 0.45], [-1.86, -1.86], color=WATER, lw=0.9, alpha=0.55)
+    ax.plot([hdr_x[0] - 0.45, hdr_x[-1] + 0.45], [-1.82, -1.82], color=WATER, lw=0.9, alpha=0.55)
 
     # spacing and speed
-    ax.annotate("", xy=(hdr_x[1], 0.66), xytext=(hdr_x[0], 0.66),
+    ax.annotate("", xy=(hdr_x[1], 1.60), xytext=(hdr_x[0], 1.60),
                 arrowprops=dict(arrowstyle="<->", color="k", lw=1.1))
-    ax.annotate(f"header spacing {S_GAP * 1000:.0f} mm", xy=((hdr_x[0] + hdr_x[1]) / 2, 0.72),
+    ax.annotate(f"header spacing {S_GAP * 1000:.0f} mm", xy=((hdr_x[0] + hdr_x[1]) / 2, 1.66),
                 ha="center", fontsize=9.5)
-    ax.annotate("", xy=(hdr_x[4] + 1.2, -2.42), xytext=(hdr_x[4] - 1.2, -2.42),
+    ax.annotate("", xy=(hdr_x[4] + 0.9, -2.26), xytext=(hdr_x[4] - 0.9, -2.26),
                 arrowprops=dict(arrowstyle="-|>", color="crimson", lw=2.6))
-    ax.annotate(f"run speed {SPEED_MPM:.0f} m/min", xy=(hdr_x[4], -2.74), ha="center",
+    ax.annotate(f"run speed {SPEED_MPM:.0f} m/min", xy=(hdr_x[4], -2.52), ha="center",
                 fontsize=9.5, color="crimson")
 
     # entry and exit
@@ -81,7 +81,7 @@ def line_schematic():
     ax.annotate("", xy=(x_end + 0.1, -0.34), xytext=(x_end - 1.2, -0.34),
                 arrowprops=dict(arrowstyle="-|>", color="0.3", lw=1.6))
 
-    ax.set_ylim(-2.98, 2.06)
+    ax.set_ylim(-2.80, 2.18)
     ax.set_title(f"Laminar accelerated cooling: {N_HEADER} top and {N_HEADER} bottom headers "
                  "sweeping over the plate", fontsize=13)
     ax.axis("off")
@@ -99,7 +99,7 @@ def line_schematic():
     axb.set_xlim(x_start, x_end + 0.6)
     axb.set_yticks([])
     axb.set_xlabel("distance along the run-out table [m]")
-    axb.set_title("temperature against position, shape only: the computed magnitudes are in section 8",
+    axb.set_title("temperature against position, shape only: the computed magnitudes are in section 11",
                   fontsize=9.5)
     axb.legend(loc="lower left", fontsize=9)
 
