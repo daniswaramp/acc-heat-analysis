@@ -102,14 +102,24 @@ screening calculation and says so: a threshold temperature makes a phase possibl
 of it appears depends on the time spent in each temperature range, which is what a CCT diagram
 encodes.
 
+The ferrite start line on that map is the one relation in the notebook that carries the cooling
+rate itself [8]. It was fitted between 10 and 200 °C/min, so it is drawn only over the band that
+corresponds to, and where the rate leaves the band the notebook prints that the point is outside the
+range instead of quoting a temperature. A surface spike of several hundred degrees per second fed to
+that regression returns a number, and the number is meaningless.
+
 ## Equations
 
-The solver integrates Fourier's law and the constant-property diffusion equation:
+The relations below are not derived here. Each one is taken from the cited source, and the two
+places where a constant came with the notebook rather than from a paper say so. Numbering follows
+the reference list at the end of this file.
 
-$$\mathbf{q} = -k\nabla T, \qquad \frac{\partial T}{\partial t} = \alpha \nabla^2 T, \qquad \alpha = \frac{k}{\rho c_p}$$
+The solver integrates Fourier's law and the constant-property diffusion equation [1]:
+
+$$\mathbf{q} = -k\nabla T, \qquad \frac{\partial T}{\partial t} = \alpha \nabla^2 T, \qquad \alpha = \frac{k}{\rho c_p} \qquad [1]$$
 
 At the faces, the boundary condition switches with the curtain position. Under water, and between
-curtains where the surface loses heat to air and radiates:
+curtains where the surface loses heat to air and radiates [2]:
 
 $$-k\frac{\partial T}{\partial n} = h_w\,(T_s - T_w), \qquad -k\frac{\partial T}{\partial n} = h_{air}(T_s - T_\infty) + \varepsilon\sigma\left(T_s^4 - T_{amb}^4\right)$$
 
@@ -120,23 +130,29 @@ Water flux over the impingement area, and the power-law coefficient it feeds:
 
 $$\dot W = \frac{Q_{header}/60}{W\,l_{imp}}, \qquad h_w = C\,\dot W^{\,n}, \qquad C = 1.2\times10^{4},\; n = 0.45$$
 
-Biot number, then the lumped model that the Biot number justifies or rules out:
+The power-law *form* is ordinary forced-convection practice, but these two constants are the one
+place in this file without an attribution: they arrived with the original notebook rather than from
+a paper I can cite, so read them as a starting calibration and not as a measured property of any
+line. The tuning factor in section 9 exists precisely to absorb the difference, and a plant that
+wants the constant for its own headers has to calibrate it.
+
+Biot number, then the lumped model that the Biot number justifies or rules out [2]:
 
 $$Bi = \frac{h_w\,(t_h/2)}{k}, \qquad \tau = \frac{\rho c_p (t_h/2)}{h_w}, \qquad T(t) = T_w + \left(T_{FRT} - T_w\right)e^{-t/\tau}$$
 
-Surface response of a semi-infinite solid during one curtain pass, and the Heisler one-term
-solution, the two analytical benchmarks:
+Surface response of a semi-infinite solid during one curtain pass [1], and the Heisler one-term
+solution [3], the two analytical benchmarks:
 
 $$T_s = T_{FRT} + \left(T_w - T_{FRT}\right)\left(1 - e^{b^2}\mathrm{erfc}\,b\right), \qquad b = \frac{h_w\sqrt{\alpha t}}{k}$$
 
 $$\zeta_1\tan\zeta_1 = Bi, \qquad C_1 = \frac{4\sin\zeta_1}{2\zeta_1 + \sin 2\zeta_1}, \qquad \frac{T-T_w}{T_0-T_w} = C_1 e^{-\zeta_1^2 Fo}, \qquad Fo = \frac{\alpha t}{(t_h/2)^2}$$
 
-The explicit time step takes the tighter of the conduction and surface stability limits:
+The explicit time step takes the tighter of the conduction and surface stability limits [4]:
 
 $$\Delta t = 0.8 \min\left(\frac{1}{2\alpha\left(\Delta x^{-2} + \Delta y^{-2} + \Delta z^{-2}\right)},\;
 \frac{1}{2\alpha/\Delta x^2 + 2h_{max}/(\rho c_p \Delta x)}\right)$$
 
-Radiation is carried as a linearised coefficient, which is what keeps the explicit update stable:
+Radiation is carried as a linearised coefficient, which is what keeps the explicit update stable [2]:
 
 $$h_{rad} = \varepsilon\sigma\left(T^2 + T_\infty^2\right)\left(T + T_\infty\right)$$
 
@@ -147,23 +163,28 @@ $$CR = -\frac{dT}{dt}$$
 Transformation temperatures from the empirical relations, and the cooling rate that would leave
 90 percent martensite:
 
-$$Ac_1 = 739 - 22C - 7Mn + 2Si + 14Cr + 13Mo - 13Ni + 20V$$
+$$Ac_1 = 739 - 22C - 7Mn + 2Si + 14Cr + 13Mo - 13Ni + 20V \qquad [7]$$
 
-$$Ac_3 = 910 - 203\sqrt{C} - 15.2Ni + 44.7Si + 104V + 31.5Mo + 13.1W$$
+$$Ac_3 = 910 - 203\sqrt{C} - 15.2Ni + 44.7Si + 104V + 31.5Mo + 13.1W \qquad [6]$$
 
-$$Ar_3 = 910 - 203\sqrt{C} - 30Mn + 44.7Si - 11Cr + 31.5Mo - 15.2Ni$$
+$$Ar_3 = 910 - 203\sqrt{C} - 30Mn + 44.7Si - 11Cr + 31.5Mo - 15.2Ni \qquad [6]$$
 
-$$B_s = 830 - 270C - 90Mn - 37Ni - 70Cr - 83Mo, \qquad M_s = 561 - 474C - 33Mn - 17Cr - 17Ni - 21Mo$$
+$$B_s = 830 - 270C - 90Mn - 37Ni - 70Cr - 83Mo, \qquad M_s = 561 - 474C - 33Mn - 17Cr - 17Ni - 21Mo \qquad [5]$$
 
-$$\log_{10} V_{c90} = 2.94 - 0.75\beta, \qquad \beta = 2.7C + 0.4Si + Mn + 0.45Ni + 0.8Cr + 2Mo$$
+$$\log_{10} V_{c90} = 2.94 - 0.75\beta, \qquad \beta = 2.7C + 0.4Si + Mn + 0.45Ni + 0.8Cr + 2Mo \qquad [9]$$
 
 The equilibrium annex minimises the Gibbs energy for the entered composition over the stable phase
-set, and reads Ae3 and A1 off the resulting fractions:
+set [11] using pycalphad [12] against the MatCalc steel database [13], [14], and reads Ae3 and A1
+off the resulting fractions:
 
 $$\min G(T, x) \quad \text{over} \quad \{\gamma, \alpha, Fe_3C, M_{23}C_6, M_7C_3, M_6C\}$$
 
-Every alloy content above is in weight percent. Sources for the transformation equations, and the
-ranges they were fitted over, are listed in `ACC_Heat_Analysis.md` alongside each one.
+Every alloy content above is in weight percent. The reference list follows IEEE style, and the
+notebook names the source beside each relation as well, together with the composition range each
+was fitted over. The handbook in [10] is the compilation I used to locate [5] to [9] and to check
+their validity limits, and it is worth reading alongside them: a regression quoted outside the range
+it was fitted on is worse than no regression at all, which is why the notebook prints "outside the
+fitted range" rather than a number when the rate leaves the band.
 
 ## Default run
 
@@ -234,3 +255,33 @@ coefficient rather than a boiling curve, and the scale layer is ignored. Those a
 places where a plant measurement would diverge most, which is what the tuning factor exists to
 absorb. Treat the default numbers as a method demonstration tuned to plausible plate-mill
 conditions, not as a statement about any particular line.
+
+## References
+
+[1] H. S. Carslaw and J. C. Jaeger, *Conduction of Heat in Solids*, 2nd ed. Oxford, U.K.: Oxford Univ. Press, 1959.
+
+[2] T. L. Bergman, A. S. Lavine, F. P. Incropera, and D. P. DeWitt, *Fundamentals of Heat and Mass Transfer*, 8th ed. Hoboken, NJ, USA: Wiley, 2018.
+
+[3] M. P. Heisler, "Temperature charts for induction and constant-temperature heating," *Trans. ASME*, vol. 69, pp. 227-236, 1947.
+
+[4] J. Crank, *The Mathematics of Diffusion*, 2nd ed. Oxford, U.K.: Oxford Univ. Press, 1975.
+
+[5] W. Steven and A. G. Haynes, "The temperature of formation of martensite and bainite in low-alloy steels. Some effects of chemical composition," *J. Iron Steel Inst.*, vol. 183, pp. 349-359, 1956.
+
+[6] K. W. Andrews, "Empirical formulae for the calculation of some transformation temperatures," *J. Iron Steel Inst.*, vol. 203, pt. 7, pp. 721-727, 1965.
+
+[7] H. Brandis, "Rechnerische Bestimmung der Umwandlungstemperaturen von niedriglegierten Stählen," *TEW Tech. Ber.*, vol. 1, no. 1, pp. 8-10, 1975.
+
+[8] B. Mintz, J. R. Banerjee, and K. M. Banks, "Regression equation for Ar3 temperature for coarse grained as cast steels," *Ironmaking & Steelmaking*, vol. 38, no. 3, pp. 197-203, 2011.
+
+[9] M. Ueno and K. Itoh, "New empirical formula for estimation of hardenability from chemical compositions," *Tetsu-to-Hagané*, vol. 74, no. 6, pp. 1073-1080, 1988.
+
+[10] A. A. Gorni, *Steel Forming and Heat Treating Handbook*, 27 Sep. 2024 ed. [Online]. Available: http://www.gorni.eng.br/e/Gorni_SFHTHandbook.pdf
+
+[11] L. Kaufman and H. Bernstein, *Computer Calculation of Phase Diagrams*. New York, NY, USA: Academic Press, 1970.
+
+[12] R. Otis and Z.-K. Liu, "pycalphad: CALPHAD-based computational thermodynamics in Python," *J. Open Res. Softw.*, vol. 5, no. 1, p. 1, 2017, doi: 10.5334/jors.140.
+
+[13] E. Povoden-Karadeniz and A. Jacob, "MatCalc steel database mc_fe, version 2.062," TU Wien, Vienna, Austria, 2023, Open Database Licence. [Online]. Available: https://www.matcalc.at
+
+[14] A. Moolya, "PyCalphad-compatible port of the MatCalc mc_fe v2.062 steel database," 2024. [Online]. Available: https://github.com/adityamoolya/maraging-steel-calphad
