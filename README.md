@@ -110,58 +110,127 @@ that regression returns a number, and the number is meaningless.
 
 ## Equations
 
-The relations below are not derived here. Each one is taken from the cited source, and the two
-places where a constant came with the notebook rather than from a paper say so. Numbering follows
-the reference list at the end of this file.
+The relations are taken from the sources cited at the end of the file. Symbols are defined under
+each one, and the default values are the ones in the notebook's fixed parameter cell.
 
-The solver integrates Fourier's law and the constant-property diffusion equation [1]:
+### How heat moves inside the plate
 
 $$\mathbf{q} = -k\nabla T, \qquad \frac{\partial T}{\partial t} = \alpha \nabla^2 T, \qquad \alpha = \frac{k}{\rho c_p} \qquad [1]$$
 
-At the faces, the boundary condition switches with the curtain position. Under water, and between
-curtains where the surface loses heat to air and radiates [2]:
+- $\mathbf{q}$ is the heat flux vector in W/m², the heat crossing a square metre of steel per second, pointing down the temperature gradient.
+- $k$ is the thermal conductivity of the steel, 30 W/m/K in the default run.
+- $\nabla T$ is the temperature gradient in K/m, which sets both the direction and the steepness of the flow.
+- $\rho$ is the density, 7850 kg/m³, and $c_p$ the specific heat, 650 J/kg/K.
+- $\alpha$ is the thermal diffusivity in m²/s, 5.88 × 10⁻⁶ here, and it is the number that decides how fast a temperature difference spreads.
+- $t$ is time.
 
-$$-k\frac{\partial T}{\partial n} = h_w\,(T_s - T_w), \qquad -k\frac{\partial T}{\partial n} = h_{air}(T_s - T_\infty) + \varepsilon\sigma\left(T_s^4 - T_{amb}^4\right)$$
+The first relation says that heat inside the plate moves from hot to cold at a rate the conductivity
+fixes. The second says that nothing else moves it: no source, no sink, only conduction, and that the
+diffusivity sets the pace. A 25 mm plate needs minutes to even out through the thickness, which is
+why the surface and the core are still 138 °C apart when the plate leaves the curtains.
 
-The symmetry plane carries no flux, $\partial T/\partial n = 0$, and the width and end faces lose
-heat to air.
+### At the surfaces
 
-Water flux over the impingement area, and the power-law coefficient it feeds:
+$$-k\frac{\partial T}{\partial n} = h_w\,(T_s - T_w) \qquad [2]$$
+
+$$-k\frac{\partial T}{\partial n} = h_{air}(T_s - T_\infty) + \varepsilon\sigma\left(T_s^4 - T_{amb}^4\right) \qquad [2]$$
+
+- $\partial T/\partial n$ is the temperature gradient perpendicular to the surface, in K/m.
+- $h_w$ is the water-side heat transfer coefficient in W/m²/K, 3548 in the default run, and $h_{air}$ the air-side value, 20.
+- $T_s$ is the surface temperature at that instant, and $T_w$ the cooling water at 30 °C.
+- $T_\infty$ is the ambient air at 30 °C, and $T_{amb}$ the surroundings the surface radiates to.
+- $\varepsilon$ is the surface emissivity, 0.8 for oxidised steel, and $\sigma$ the Stefan-Boltzmann constant, 5.670 × 10⁻⁸ W/m²/K⁴.
+
+The first condition holds while the point sits under a curtain: the heat arriving at the surface from
+inside is carried off by the water at a rate proportional to how far the surface is above the water
+temperature. The second holds in the gaps and after the last curtain, where air takes part of it and
+the surface radiates the rest. The radiative term grows with the fourth power of temperature, so it
+dominates at 880 °C and fades as the plate cools. The symmetry plane at half width carries no flux,
+$\partial T/\partial n = 0$, and the two ends of the plate lose heat to air by the second condition.
+
+### The water side
 
 $$\dot W = \frac{Q_{header}/60}{W\,l_{imp}}, \qquad h_w = C\,\dot W^{\,n}, \qquad C = 1.2\times10^{4},\; n = 0.45$$
 
-The power-law *form* is ordinary forced-convection practice, but these two constants are the one
-place in this file without an attribution: they arrived with the original notebook rather than from
-a paper I can cite, so read them as a starting calibration and not as a measured property of any
-line. The tuning factor in section 9 exists precisely to absorb the difference, and a plant that
-wants the constant for its own headers has to calibrate it.
+- $\dot W$ is the water flux in L/m²/s: the header's volume flow spread over the area it actually wets.
+- $Q_{header}$ is the flow per header, 2000 L/min, divided by 60 to reach litres per second.
+- $W$ is the plate width, 2000 mm, and $l_{imp}$ the impingement length, 250 mm, the strip of surface one curtain contacts.
+- $C$ and $n$ are the correlation constants.
 
-Biot number, then the lumped model that the Biot number justifies or rules out [2]:
+The flux works out at 66.7 L/m²/s, which is a plausible curtain load for a plate mill. The power-law
+form is ordinary forced-convection practice, but these two constants are the one place in the file
+with no source I can name. They came with the original notebook rather than from a paper, so they are
+a starting calibration and not a measured property of any line. The tuning factor in the tuning
+section exists to absorb that difference, and a plant wanting the constant for its own headers has to
+calibrate it against a measured finish cooling temperature.
 
-$$Bi = \frac{h_w\,(t_h/2)}{k}, \qquad \tau = \frac{\rho c_p (t_h/2)}{h_w}, \qquad T(t) = T_w + \left(T_{FRT} - T_w\right)e^{-t/\tau}$$
+### Two dimensionless numbers and three analytical answers
 
-Surface response of a semi-infinite solid during one curtain pass [1], and the Heisler one-term
-solution [3], the two analytical benchmarks:
+$$Bi = \frac{h_w\,(t_h/2)}{k}, \qquad \tau = \frac{\rho c_p (t_h/2)}{h_w}, \qquad T(t) = T_w + \left(T_{FRT} - T_w\right)e^{-t/\tau} \qquad [2]$$
 
-$$T_s = T_{FRT} + \left(T_w - T_{FRT}\right)\left(1 - e^{b^2}\mathrm{erfc}\,b\right), \qquad b = \frac{h_w\sqrt{\alpha t}}{k}$$
+- $Bi$ is the Biot number: the resistance to heat transfer at the surface divided by the resistance to conduction inside.
+- $t_h$ is the plate thickness, 25 mm, and $t_h/2$ the half thickness, which is the conduction length that matters for a plate cooled from both faces.
+- $\tau$ is the time constant in seconds, 18.0 in the default run.
+- $T_{FRT}$ is the finish rolling temperature, 880 °C, the temperature the plate enters the cooling zone at.
 
-$$\zeta_1\tan\zeta_1 = Bi, \qquad C_1 = \frac{4\sin\zeta_1}{2\zeta_1 + \sin 2\zeta_1}, \qquad \frac{T-T_w}{T_0-T_w} = C_1 e^{-\zeta_1^2 Fo}, \qquad Fo = \frac{\alpha t}{(t_h/2)^2}$$
+The Biot number comes out at 1.48, well above 0.1, which rules out treating the plate as a single
+lump. The lumped model is printed anyway because it is the fast sanity check: it predicts 251 °C at
+the end of cooling against 821 °C from the field solution, and the gap is exactly the through-thickness
+gradient this project is about.
 
-The explicit time step takes the tighter of the conduction and surface stability limits [4]:
+$$T_s = T_{FRT} + \left(T_w - T_{FRT}\right)\left(1 - e^{b^2}\mathrm{erfc}\,b\right), \qquad b = \frac{h_w\sqrt{\alpha t}}{k} \qquad [1]$$
+
+- $b$ is a dimensionless group that combines the water coefficient, the diffusivity and the time the surface has been wet.
+- $t$ is the exposure time under one curtain, 0.25 s at 60 m/min with a 250 mm impingement band.
+- $\mathrm{erfc}$ is the complementary error function.
+
+This treats the plate as infinitely thick during a single pass, which is fair while the thermal wave
+has not yet reached the core. It gives the surface response to one curtain: 880 down to 758 °C, which
+is the sharp drop that appears at every header in the evolution plot.
+
+$$\zeta_1\tan\zeta_1 = Bi, \qquad C_1 = \frac{4\sin\zeta_1}{2\zeta_1 + \sin 2\zeta_1}, \qquad \frac{T-T_w}{T_0-T_w} = C_1 e^{-\zeta_1^2 Fo}, \qquad Fo = \frac{\alpha t}{(t_h/2)^2} \qquad [3]$$
+
+- $\zeta_1$ is the first root of the transcendental equation, 0.9836 here, and $C_1$ its coefficient, 1.1524.
+- $Fo$ is the Fourier number, dimensionless time: diffusivity multiplied by time divided by the square of the half thickness.
+- $T_0$ is the starting temperature and $T$ the temperature at that Fourier number.
+
+One term of the series is enough at these Fourier numbers. It is the third estimate: 435 °C at the end
+of cooling, between the lumped value and the field solution, as it should be.
+
+### Keeping the march in time stable
 
 $$\Delta t = 0.8 \min\left(\frac{1}{2\alpha\left(\Delta x^{-2} + \Delta y^{-2} + \Delta z^{-2}\right)},\;
-\frac{1}{2\alpha/\Delta x^2 + 2h_{max}/(\rho c_p \Delta x)}\right)$$
+\frac{1}{2\alpha/\Delta x^2 + 2h_{max}/(\rho c_p \Delta x)}\right) \qquad [4]$$
 
-Radiation is carried as a linearised coefficient, which is what keeps the explicit update stable [2]:
+- $\Delta t$ is the time step, 0.061 s in the default run.
+- $\Delta x$, $\Delta y$, $\Delta z$ are the node spacings, 1 mm across the thickness, 5 mm across the half width and 50 mm along the length.
+- $h_{max}$ is the largest surface coefficient applied during the run, the water value or the film-boiling value when that toggle is on.
+- The 0.8 is margin on the limit rather than the limit itself.
 
-$$h_{rad} = \varepsilon\sigma\left(T^2 + T_\infty^2\right)\left(T + T_\infty\right)$$
+Explicit schemes advance the solution one small step at a time and become unstable if the step is too
+long. The first term is the limit set by conduction between nodes. The second is the tighter one at a
+surface, because a node that also loses heat to the fluid can change faster than conduction alone
+would allow. Both are evaluated before the run starts, and the smaller one, scaled by 0.8, is used.
 
-Cooling rate, quoted at each depth in °C/s:
+$$h_{rad} = \varepsilon\sigma\left(T^2 + T_\infty^2\right)\left(T + T_\infty\right) \qquad [2]$$
+
+- $h_{rad}$ is a radiative coefficient in W/m²/K that transfers the same heat as $T^4 - T_{amb}^4$ at the current temperature.
+
+Factoring the quartic this way turns radiation into an extra film coefficient, so the surface update
+stays linear in temperature and the stability criterion above still applies. The cost is that
+$h_{rad}$ has to be recomputed at every step, which is cheap and done.
+
+### What is asked of the result
 
 $$CR = -\frac{dT}{dt}$$
 
-Transformation temperatures from the empirical relations, and the cooling rate that would leave
-90 percent martensite:
+- $CR$ is the cooling rate in °C/s at a given depth, the quantity the metallurgy responds to.
+- The minus sign makes it positive while the plate cools.
+
+The rates that come out are 692 °C/s at the surface as a curtain passes, 2.4 to 3.0 °C/s averaged
+over the whole cooling pass, and 0.45 to 0.63 °C/s once the plate is air cooling on the bed.
+
+### Where the steel transforms
 
 $$Ac_1 = 739 - 22C - 7Mn + 2Si + 14Cr + 13Mo - 13Ni + 20V \qquad [7]$$
 
@@ -173,18 +242,35 @@ $$B_s = 830 - 270C - 90Mn - 37Ni - 70Cr - 83Mo, \qquad M_s = 561 - 474C - 33Mn -
 
 $$\log_{10} V_{c90} = 2.94 - 0.75\beta, \qquad \beta = 2.7C + 0.4Si + Mn + 0.45Ni + 0.8Cr + 2Mo \qquad [9]$$
 
-The equilibrium annex minimises the Gibbs energy for the entered composition over the stable phase
-set [11] using pycalphad [12] against the MatCalc steel database [13], [14], and reads Ae3 and A1
-off the resulting fractions:
+- The element symbols are mass fractions in weight percent, taken from the chemistry in the inputs cell: C 0.09, Mn 1.45, Si 0.25, Nb 0.035, Ti 0.015 for the default grade.
+- $Ac_1$ is where austenite begins to form on heating, and $Ac_3$ where the steel becomes fully austenitic.
+- $Ar_3$ is where ferrite begins to form on cooling, so it is the temperature the plate has to fall below before anything happens.
+- $B_s$ is where bainite starts and $M_s$ where martensite starts.
+- $V_{c90}$ is the cooling rate that would leave 90 percent martensite, and $\beta$ the carbon equivalent the relation is built on.
 
-$$\min G(T, x) \quad \text{over} \quad \{\gamma, \alpha, Fe_3C, M_{23}C_6, M_7C_3, M_6C\}$$
+For this grade the answers are $Ac_1$ 728 °C, $Ac_3$ 861 °C, $Ar_3$ 816 °C, $B_s$ 672 °C, $M_s$ 470 °C
+and $V_{c90}$ 37 °C/s. The heating and cooling temperatures are not the same number for the same
+steel, which is why $Ac_3$ sits 45 °C above $Ar_3$: one is measured going up and the other coming
+down, with the undercooling included.
 
-Every alloy content above is in weight percent. The reference list follows IEEE style, and the
-notebook names the source beside each relation as well, together with the composition range each
-was fitted over. The handbook in [10] is the compilation I used to locate [5] to [9] and to check
-their validity limits, and it is worth reading alongside them: a regression quoted outside the range
-it was fitted on is worse than no regression at all, which is why the notebook prints "outside the
-fitted range" rather than a number when the rate leaves the band.
+The ferrite start line on the CCT map is the one relation here that carries the cooling rate itself
+[8]. It was fitted between 10 and 200 °C/min, so the notebook draws it only over that band, and where
+a rate leaves the band the cell reports that rather than quoting a temperature. A surface spike of
+several hundred degrees per second put into that regression returns a number, and the number would be
+nonsense.
+
+### The equilibrium calculation
+
+$$\min G(T, x) \quad \text{over} \quad \{\gamma, \alpha, Fe_3C, M_{23}C_6, M_7C_3, M_6C\} \qquad [11]$$
+
+- $G$ is the Gibbs energy of the system, and $T$ and $x$ are the temperature and the composition it is evaluated at.
+- $\gamma$ is austenite, $\alpha$ is ferrite, and the rest are the carbide phases the calculation is allowed to use.
+- The phase set that minimises $G$ at a given temperature and composition is the stable one.
+
+pycalphad searches for that minimum [12] using the MatCalc steel database [13], [14], and the notebook
+reads the boundaries off the resulting fractions. Because it is equilibrium, it has nothing to say
+about how long a transformation takes, which is why it sets the thresholds and the cooling rates in
+the next section decide the outcome.
 
 ## Default run
 
