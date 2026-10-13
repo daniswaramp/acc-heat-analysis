@@ -39,6 +39,33 @@ Half the width is solved, by symmetry, and the four depths quoted throughout are
 centre: surface, quarter depth, one-third depth and core. The impingement band is the part of the
 surface that sees the water coefficient at a given instant.
 
+## The route
+
+```mermaid
+flowchart TD
+    A["inputs: plate geometry, header count, speed, FRT, tune factor"] --> B["chemistry of the grade: C, Mn, Si, Cr, Mo, Ni, Cu, Nb, Ti, V, N, Al, S, P"]
+    B --> C["empirical transformation temperatures: Ac1, Ac3, Ar3, Bs, Ms, Vc90"]
+    B --> D["equilibrium phases with pycalphad against the MatCalc steel database: Ae3, A1"]
+    A --> E["water flux, power-law HTC correlation, Biot number"]
+    E --> F["three analytical benchmarks: lumped, semi-infinite, Heisler"]
+    A --> G["3-D explicit finite difference solver, moving curtains, stability-limited step"]
+    G --> H["temperature against time at surface, quarter, one-third and core"]
+    G --> I["2-D contours and the cooling sweep along the plate"]
+    H --> J["cooling rate in degC/s at each depth"]
+    F --> K["validation"]
+    G --> K
+    C --> L["phase screen: each depth against Ar3, Bs, Ms, Vc90"]
+    D --> L
+    J --> L
+    L --> M["CCT-style map: probable phase against cooling time"]
+    M --> N["verdict: ferrite and pearlite at every rate this line can deliver"]
+```
+
+The order matters. The chemistry decides the thresholds before the thermal model produces the rates,
+and the phases are read at the point where the two meet. In the notebook the sections run in that
+order: inputs and the grade first, then the temperature field through the thickness, then the phase
+questions.
+
 ## How it works
 
 The cooling line is modelled in three stages.
@@ -160,6 +187,22 @@ Inputs: 25 mm thick, 2000 mm wide, 12000 mm long, five curtains per side spaced 
 
 The full write-up, with the equations, the input tables and every figure, is in
 `ACC_Heat_Analysis.md`.
+
+## Methods and tools
+
+- **numpy** for the whole numerical core: the finite difference fields, the vectorised curtain mask,
+  the analytical solutions and every derived quantity.
+- **matplotlib** for the twelve figures, written to `figures/` by the notebook itself.
+- **The field solution is an explicit finite difference scheme** on a 26 x 201 x 241 grid with a
+  stability-limited step, chosen over a commercial solver because the moving-curtain boundary
+  condition and the through-thickness sampling are both easy to write directly and to check.
+- **pycalphad with the MatCalc mc_fe v2.062 steel database** (ODbL, TU Wien) for the equilibrium
+  annex. It needs Python 3.13 or older, since there is no `symengine` wheel for 3.14 yet, and the
+  database is fetched at first use rather than committed.
+- **Closed-form metallurgical relations** for the transformation temperatures, each cited at the
+  point of use and each restricted to the range it was fitted over.
+- **nbconvert** to execute the notebook headlessly, so the outputs that ship with it are the result
+  of a run rather than of a session.
 
 ## Run it
 
