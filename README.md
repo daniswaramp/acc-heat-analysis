@@ -1,4 +1,4 @@
-# Cooling of a hot-rolled plate on an accelerated cooling line
+# Accelerated cooling simulation of a hot-rolled plate on a laminar cooling line
 
 What happens to a plate between the finishing mill and the cooling bed: how far apart the surface,
 quarter-depth, one-third-depth and core temperatures get while the water curtains pass, and how the plate
