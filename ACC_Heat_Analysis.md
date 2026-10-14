@@ -1,4 +1,4 @@
-# Accelerated Cooling (ACC) of hot-rolled plates
+# Accelerated cooling simulation of a hot-rolled plate on a laminar cooling line
 
 ## Empirical calculation and a 3-D finite difference heat transfer analysis
 
@@ -57,9 +57,13 @@ Radiation (Stefan-Boltzmann) matters on hot air-exposed surfaces:
 $$q_{rad}=\varepsilon\,\sigma\left(T_s^{4}-T_f^{4}\right),
 \qquad \sigma = 5.670\times10^{-8}\ \mathrm{W/m^2K^4}$$
 
-The two combine into an effective film coefficient:
+The two combine into an effective film coefficient, with both temperatures absolute:
 
 $$h_{eff}=h_{conv}+\varepsilon\,\sigma\left(T_s^{2}+T_f^{2}\right)\left(T_s+T_f\right)$$
+
+$T_s$ and $T_f$ are in kelvin, since that factorisation is what $\varepsilon\sigma(T_s^4-T_f^4)$ becomes.
+Evaluated in degrees Celsius it understates the coefficient several-fold: 32 W/m²K against 94 W/m²K at an
+880 °C surface with a 30 °C sink. The solver converts before it evaluates.
 
 The symmetry plane at the plate centre-line in width carries zero flux, $\partial T/\partial n = 0$, so
 only half the width needs to be modelled.
@@ -94,10 +98,14 @@ $$\frac{\theta_m}{\theta_i}=C_1\,\exp\!\left(-\zeta_1^{2}\,Fo\right)$$
 ### 1.6 Empirical correlations
 
 Water-flux heat transfer coefficient for laminar curtain cooling of hot steel, in power-law
-form with constants taken from the ACC literature:
+form:
 
 $$h_w = C\,\dot{W}^{\,n},\qquad
 \dot{W}=\frac{\dot{Q}_{header}}{W\cdot l_{imp}}\ \ [\mathrm{m^3/m^2 s}]$$
+
+$C$ and $n$ are a starting calibration rather than a published pair. They came with the model, no source can
+be named for them, and the tuning factor in section 6b is what absorbs the difference between them and a
+measured line.
 
 Boiling regimes, an optional toggle: above the Leidenfrost temperature the surface is
 blanketed by stable film boiling (low $h$). Below it the water wets the surface and
@@ -119,10 +127,14 @@ $$T_{i,j,k}^{p+1}=T_{i,j,k}^{p}
 +\frac{T_{i,j+1,k}^{p}-2T_{i,j,k}^{p}+T_{i,j-1,k}^{p}}{\Delta y^{2}}
 +\frac{T_{i,j,k+1}^{p}-2T_{i,j,k}^{p}+T_{i,j,k-1}^{p}}{\Delta z^{2}}\right]$$
 
-Surface node, from an energy balance on a half-cell ($T_{in}$ is the first interior node):
+Surface node, from an energy balance on a half-cell, with $T_1$ the first interior node:
 
 $$\rho c_p\,\frac{\Delta x}{2}\,\frac{dT_s}{dt}
-=\frac{2k}{\Delta x}\left(T_{in}-T_s\right)+h\left(T_f-T_s\right)$$
+=\frac{k}{\Delta x}\left(T_{1}-T_s\right)+h\left(T_f-T_s\right)$$
+
+Dividing through by $\rho c_p\Delta x/2$ gives the update the code applies,
+$2\alpha/\Delta x^2\,(T_1-T_s)+2h/(\rho c_p\Delta x)\,(T_f-T_s)$, and $\rho c_p\alpha=k$ makes the two the
+same statement.
 
 Stability criterion for the explicit scheme, with a 0.8 safety factor:
 
@@ -276,18 +288,19 @@ tabulated in section 11, where they are set against the transformation temperatu
 |---|---|---|
 | Biot number | 1.48 | FDM required (Bi > 0.1) |
 | Tuning factor (water HTC scale) | 1.00 | uncalibrated (correlation as-is) |
-| FDM core temperature at end of ACC | 821 °C | n/a |
-| Lumped-capacitance estimate (continuous quench) | 251 °C | lower bound, over-predicts cooling for pulsed curtains |
-| Heisler one-term estimate (continuous quench) | 435 °C | benchmark |
-| Semi-infinite surface after 1 curtain | 758 °C | benchmark |
-| Max core-surface differential | about 138 °C | n/a |
-| Stability (min T ≥ water temp) | 761 °C | PASS |
+| FDM core temperature at end of ACC | 809 °C | n/a |
+| Lumped-capacitance estimate (continuous quench) | 252 °C | lower bound, over-predicts cooling for pulsed curtains |
+| Heisler one-term estimate (continuous quench) | 437 °C | lower bound, for the same reason |
+| Semi-infinite surface after 1 curtain | 758 °C | surface dip over one contact, not a core temperature |
+| Max core-surface differential | about 137 °C | n/a |
+| Stability (min T ≥ water temp) | 697 °C | PASS |
 | Surface cools faster than core | n/a | PASS |
 
-One caveat applies to both analytical models. They assume the water HTC acts continuously over
-the whole timeline, while the FDM applies it only during curtain contact, so the analytical
-values bracket the FDM result. Lumped sits below it, since continuous quenching over-predicts
-the cooling, and the semi-infinite solution matches the early surface behaviour.
+One caveat applies to the first two analytical models. They assume the water HTC acts continuously over
+the whole timeline, while the plate is under water for about a twentieth of it, so both over-predict the
+cooling and land below the FDM as lower bounds. Neither bounds the result from above, and bracketing is not
+the word for what they do. The semi-infinite expression is a different thing again: it gives the surface dip
+during one 0.25 s curtain contact rather than a core temperature at the end of the pass.
 
 ## 10 · Chemistry: what the grade can form
 
@@ -304,30 +317,38 @@ The relations, and where they come from.
 
 - $Ac_1 = 739 - 22C - 7Mn + 2Si + 14Cr + 13Mo - 13Ni + 20V$ (Brandis, 1975)
 - $Ac_3 = 910 - 203\sqrt{C} - 15.2Ni + 44.7Si + 104V + 31.5Mo + 13.1W$ (Andrews, 1965)
-- $Ar_3 = 910 - 203\sqrt{C} - 30Mn + 44.7Si - 11Cr + 31.5Mo - 15.2Ni$ (Andrews, 1965)
+- $Ar_3 = 910 - 203\sqrt{C} - 30Mn + 44.7Si - 11Cr + 31.5Mo - 15.2Ni$ (Ae3-style expression, read as a
+  cooling start)
 - $B_s = 830 - 270C - 90Mn - 37Ni - 70Cr - 83Mo$ (Steven and Haynes, 1956)
 - $M_s = 561 - 474C - 33Mn - 17Cr - 17Ni - 21Mo$ (Steven and Haynes, 1956)
-- $\log_{10} V_{c90} = 2.94 - 0.75\beta$, with $\beta = 2.7C + 0.4Si + Mn + 0.45Ni + 0.8Cr + 2Mo$ (Ueno and Itoh, 1988)
+- $\log_{10} V_{c90} = 2.94 - 0.75\beta$ with $\beta = 2.7C + 0.4Si + Mn + 0.45Ni + 0.8Cr + 2Mo$ for
+  boron-treated steel, or $\log_{10} V_{c90} = 3.69 - 0.75\beta'$ with
+  $\beta' = 2.7C + 0.4Si + Mn + 0.45Ni + 0.8Cr + Mo$ for boron-free steel (Ueno and Itoh, 1988)
 
 Which gives, for this grade:
 
 | Quantity | Value |
 |---|---|
-| Carbon equivalent β | 1.84 |
+| Carbon equivalent β | 1.83 |
 | Ac1 | 728 °C |
 | Ac3 | 861 °C |
 | Ar3 | 816 °C |
 | Bs | 672 °C |
 | Ms | 470 °C |
-| Vc90, rate for 90 % martensite | 37 °C/s |
+| Vc90, rate for 90 % martensite | 207 °C/s |
 
-$V_{c90}$ is quoted in the boron-treated form of the equation, which is the form the handbook
-reproduces. A boron-free plate needs a higher rate, so read the number as a floor.
+$V_{c90}$ comes in two forms from the same paper. The boron-treated one takes the 2.94 constant and twice
+the molybdenum coefficient; the boron-free one takes 3.69 and half the molybdenum coefficient. This grade
+carries no boron, so the second form applies, and the two answers are six times apart here. The notebook reads
+the chemistry and picks the form rather than quoting one of them as a floor.
 
 A regression that carries the cooling rate as a term also exists (Mintz, 2011: $Ar_3 = 862 -
-182C - 76.1Mn + 1121S - 1804Nb + 1168Ti - 2852N_t - 0.0084\,CR$, with $CR$ in °C/min). It was
-fitted between 10 and 200 °C/min and the peak rates in this run go far past that, so the notebook
-prints it only where the rate falls inside the fitted range and says so where it does not.
+182C - 76.1Mn + 1121S - 1804Nb + 1168Ti - 2852N_t - 0.084\,CR$, with $CR$ in °C/min and $N_t$ the nitrogen
+left in solution once the titanium has taken its share). The cooling-rate coefficient is 0.084 per °C/min in
+the paper, which over the fitted band is the 25 °C decrease the paper itself reports. The handbook compilation
+prints 0.0084 for the same equation, which would give under 2 °C across that band, so the paper's value is
+used. The fit covers 10 to 200 °C/min and the peak rates in this run go far past that, so the notebook prints
+it only where the rate falls inside the band and says so where it does not.
 
 ## 11 · Reading the cooling curve against the transformation temperatures
 
@@ -336,10 +357,10 @@ different moment and at a different rate. The rates, in °C/s:
 
 | Depth | Peak | Mean over the ACC pass | While air cooling | Through 800 to 500 °C |
 |---|---|---|---|---|
-| Surface | 692 | 3.0 | 0.45 | not reached |
-| Quarter depth | 11.7 | 2.6 | 0.54 | not reached |
-| One-third depth | 6.0 | 2.5 | 0.58 | not reached |
-| Core | 4.3 | 2.4 | 0.63 | not reached |
+| Surface | 673 | 3.8 | 0.96 | not reached |
+| Quarter depth | 12.3 | 3.3 | 1.08 | not reached |
+| One-third depth | 6.6 | 3.1 | 1.13 | not reached |
+| Core | 4.9 | 3.0 | 1.19 | not reached |
 
 The peak is the steepest instant, under a curtain as it passes, and it is the most grid-sensitive
 number in the whole model, since it follows from the water coefficient and the 1 mm first cell
@@ -353,23 +374,22 @@ Set against the chemistry:
 
 | Depth | Rate while air cooling [°C/s] | T at end of ACC [°C] | T at end of window [°C] | What the path implies |
 |---|---|---|---|---|
-| Surface | 0.45 | 808 | 795 | ferrite and pearlite; 0.45 °C/s against Vc90 = 37 °C/s rules out martensite |
-| Quarter depth | 0.54 | 816 | 800 | ferrite and pearlite |
-| One-third depth | 0.58 | 819 | 801 | ferrite and pearlite |
-| Core | 0.63 | 821 | 802 | ferrite and pearlite |
+| Surface | 0.96 | 788 | 759 | ferrite and pearlite; 0.96 °C/s against Vc90 = 207 °C/s rules out martensite |
+| Quarter depth | 1.08 | 801 | 769 | ferrite and pearlite |
+| One-third depth | 1.13 | 805 | 771 | ferrite and pearlite |
+| Core | 1.19 | 809 | 773 | ferrite and pearlite |
 
 None of that is a transformation, and the numbers say why. The section leaves the curtains between
-808 and 821 °C, so the surface is already under the equilibrium Ar3 of 816 °C while the core is
-just above it, and the 30 s of air cooling brings every depth under Ar3. Bs at 672 °C and Ms at
-470 °C stay far below, and from there the plate sheds heat at under 0.6 °C/s against the 37 °C/s
-that 90 % martensite would need, while bainite would ask for the section to reach 672 °C at a rate
-it never sees. Ferrite and pearlite is what this plate can make.
+788 and 809 °C, so every depth is already under the Ar3 of 816 °C, and the 30 s of air cooling takes it
+further under. Bs at 672 °C and Ms at 470 °C stay far below, and from there the plate sheds heat at under
+1.2 °C/s against the 207 °C/s that 90 % martensite would need, while bainite would ask for the section to
+reach 672 °C at a rate it never sees. Ferrite and pearlite is what this plate can make.
 
-The 692 °C/s surface spike is real in the model and irrelevant to the phases, because it happens
+The 673 °C/s surface spike is real in the model and irrelevant to the phases, because it happens
 while the surface is still near 880 °C, well above the ferrite start temperature, and a cooling
 rate only decides the microstructure while the steel is inside the transformation range. This is
-also where the through-thickness spread goes quiet: the depths differ by about 13 °C at the end of
-the ACC, against 138 °C at the peak of the pass.
+also where the through-thickness spread goes quiet: the depths differ by about 21 °C at the end of
+the ACC, against 137 °C at the peak of the pass.
 
 What the comparison cannot do is kinetics. A threshold temperature says that a phase is possible,
 not how much of it appears, because the amount depends on how long the steel sits in each
@@ -408,12 +428,11 @@ Which puts the boundaries at:
 | A1, cementite dissolves | 684 °C | Ac1 728 °C |
 
 Two things are worth reading off that comparison. The equilibrium Ae3 of 839 °C sits between the
-empirical Ac3 and Ar3, which is where it belongs, since Ac3 is measured on heating and Ar3 on
-cooling with the plate's undercooling. The A1 is 44 °C below the empirical Ac1, and that gap is
-the more interesting one: the empirical relation is a plain-carbon regression that carries no
-niobium, while the database dissolves the niobium into the austenite and depresses the carbide
-stability. Neither number is wrong, and the difference is a fair measure of what a regression on
-chemistry alone is worth when a microalloying addition is doing work.
+empirical Ac3 of 861 °C and Ar3 of 816 °C, which is where an equilibrium boundary belongs. The A1 is 44 °C
+below the empirical Ac1, and the honest reading of that gap is narrower than it looks: the phase set holds no
+niobium, titanium or vanadium carbide or nitride, so the niobium sits in solution by construction and the
+austenite is never depleted by precipitation. The gap bounds the effect of the microalloying rather than
+measuring it.
 
 The calculation leaves vanadium, sulphur and phosphorus out. The database's models for those
 three make the pycalphad solver fail when they are combined with this chemistry, all three sit
@@ -423,8 +442,8 @@ them. Change the chemistry to a grade where any of them is above trace and the n
 ## 13 · A cooling time for every phase
 
 The last piece is the one a mill actually asks for: for a given cooling time, which phases come
-out. The notebook draws a CCT-style map for the chemistry in section 3, with the cooling rate at
-700 °C on the lower axis and the equivalent time from 800 to 500 °C on the upper one, since that
+out. The notebook draws a CCT-style map for the chemistry in section 3, with the mean cooling rate over
+800 to 500 °C on the lower axis and the equivalent time over the same window on the upper one, since that
 time is the way a transformation is usually specified.
 
 ![CCT-style screening map](figures/cct_screening.png)
@@ -435,7 +454,7 @@ its regression was fitted on.
 
 | Time 800 to 500 °C [s] | Rate [°C/s] | What the chemistry gives |
 |---|---|---|
-| 5 | 60.00 | at or above Vc90, so martensite is expected |
+| 5 | 60.00 | below Vc90, so no martensite; ferrite start line is outside its fitted range here |
 | 10 | 30.00 | below Vc90, so no martensite; ferrite start line is outside its fitted range here |
 | 40 | 7.50 | below Vc90, so no martensite; ferrite start line is outside its fitted range here |
 | 150 | 2.00 | ferrite starts above Bs, so ferrite and pearlite |
@@ -443,11 +462,11 @@ its regression was fitted on.
 | 600 | 0.50 | ferrite starts above Bs, so ferrite and pearlite |
 | 1200 | 0.25 | ferrite starts above Bs, so ferrite and pearlite |
 
-Across every rate the ferrite start line covers, it stays above Bs, so ferrite and pearlite is
-what this grade makes at any cooling a run-out table can deliver. Martensite would need 37 °C/s
-or more, roughly 68 times the rate the plate carries on the cooling bed, and bainite would need
-the steel to reach 672 °C before the ferrite reaction has taken the austenite, which the same
-line says it will not do.
+Across the band the regression was fitted on, 10 to 200 °C/min, the ferrite start line stays above Bs,
+so ferrite and pearlite is what this grade makes at the rates this line delivers. The margin at the top of that
+band is a few degrees, inside the regression's own scatter of about 18 °C. Martensite would need 207 °C/s or
+more, roughly 193 times the rate the plate carries on the cooling bed, and bainite would need the steel to
+reach 672 °C before the ferrite reaction has taken the austenite.
 
 Change the carbon or the manganese in section 3 and all of this moves: Bs and Ms fall as the
 alloying rises, the ferrite start line drops, and the martensite boundary walks toward the rates
@@ -469,21 +488,21 @@ range.
   and one-third-depth temperatures that sit between the two extremes.
 - Width and length gradients come from the side edges and from the leading and trailing edges
   losing heat to air, which shows up as cold rims in every contour.
-- The cooling rate in °C/s: the surface sees a peak of about 692 °C/s as each curtain passes, the
-  section as a whole cools at 2.4 to 3.0 °C/s over the ACC pass, and the rate that governs the
-  transformation is the 0.45 to 0.63 °C/s of air cooling on the bed. The surface peak is the most
+- The cooling rate in °C/s: the surface sees a peak of about 673 °C/s as each curtain passes, the
+  section as a whole cools at 3.0 to 3.8 °C/s over the ACC pass, and the rate that governs the
+  transformation is the 0.96 to 1.19 °C/s of air cooling on the bed. The surface peak is the most
   grid-sensitive number in the model.
 - The chemistry of the grade (C 0.09, Mn 1.45, Nb 0.035) puts $Ac_1$ at 728 °C, $Ac_3$ at 861 °C,
-  $Ar_3$ at 816 °C, $B_s$ at 672 °C and $M_s$ at 470 °C, and 90 % martensite would need 37 °C/s.
-  Since the section leaves the curtains between 808 and 821 °C and then cools at under 0.6 °C/s,
-  the plate makes ferrite and pearlite, and bainite never gets a look in.
+  $Ar_3$ at 816 °C, $B_s$ at 672 °C and $M_s$ at 470 °C, and 90 % martensite would need 207 °C/s on this
+  chemistry, which carries no boron. Since the section leaves the curtains between 788 and 809 °C and then
+  cools at under 1.2 °C/s, the plate makes ferrite and pearlite, and bainite never gets a look in.
 - The same heat run through the thermodynamic database puts the equilibrium Ae3 at 839 °C and A1
   at 684 °C, against the empirical Ac3 of 861 °C, Ar3 of 816 °C and Ac1 of 728 °C. Two independent
-  routes landing within a few tens of degrees is the useful check, and it is the A1 gap that says
-  what the niobium is doing.
-- Ask the map for a cooling time instead of a depth and the answer is the same at every rate a
-  run-out table can deliver: ferrite and pearlite. Martensite would need 37 °C/s, some 68 times
-  the rate this plate carries on the bed.
+  routes landing within a few tens of degrees is the useful check, and the A1 gap bounds what the
+  microalloying is doing rather than measuring it, because the phase set carries no niobium carbide.
+- Ask the map for a cooling time instead of a depth and the answer is the same over the band the
+  regression covers: ferrite and pearlite. Martensite would need 207 °C/s, some 193 times the rate this
+  plate carries on the bed.
 - Change `t_h, W, L, n_cur, v, FRT, s_gap` in the notebook's inputs cell and re-run. The whole
   pipeline, from the empirical pre-calculation through the FDM to the contours, updates by
   itself.
